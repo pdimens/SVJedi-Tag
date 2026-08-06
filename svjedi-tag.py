@@ -104,6 +104,14 @@ def main(args):
         metavar="<Graphe File GFA>", 
         type=str,
         required=False)
+    
+    parser.add_argument(
+        "-i",
+        "--inaccuracy",
+        metavar="<Breakpoint inaccuracy in bp>",
+        type=int,
+        required=False,
+        default = 0)
 
     args = parser.parse_args()
     inVCF = args.vcf
@@ -113,6 +121,7 @@ def main(args):
     outPrefix = args.prefix
     threads = args.threads
     regionSize = args.regionSize
+    bk_inaccuracy = args.inaccuracy
 
     script_path = os.path.abspath(__file__)
     script_dir = os.path.dirname(script_path)
@@ -176,7 +185,7 @@ def main(args):
         #### Analyze barcode signal & Genotype.
         print("### Analyze barcode signal & Genotype ###")
         outVCF = outPrefix + "_genotype.vcf"
-        c6 = "python3 {}/predict_genotype.py -a {} -v {} -o {} -s {} -g {}".format(script_dir, outGAF, inVCF, outVCF,regionSize, outGFA)
+        c6 = "python3 {}/predict_genotype.py -a {} -v {} -o {} -s {} -g {} -i {}".format(script_dir, outGAF, inVCF, outVCF,regionSize, outGFA, bk_inaccuracy)
         subprocess.run(c6, shell=True, check=True)
 
 

@@ -59,14 +59,16 @@ def main(args):
 
     with xopen(args.reads, 'rt') as sequenceFile:
         for line in sequenceFile:
+            #if line.startswith("@") :
             if line.startswith("@") :
-                header = line.split('\t')[0]
+                #header = line.split('\t')[0]
+                header = line.split(' ')[0]
                 res = re.search(r'BX:Z:(\S+)', line)
                 barcode = res.group(1)
 
                 header = "".join(header.split())
                 barcode = "".join(barcode.split())
-                file.write(f'{header+barcode}\n')
+                file.write(f'{header}BX:Z:{barcode}\n')
             else : 
 
                 file.write(line)

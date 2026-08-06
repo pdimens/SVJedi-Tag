@@ -36,6 +36,7 @@ from decimal import Decimal
 
 from pgGraphs.graph import Graph
 from collections import deque
+from collections import defaultdict
 from pgGraphs.abstractions import Orientation
 
 #pylint: disable=line-too-long, disable=trailing-whitespace, disable=too-many-function-args
@@ -80,6 +81,14 @@ def main(args):
         metavar="<regionSize>",
         type=int,
         required=True)
+    
+    parser.add_argument(
+        "-i",
+        "--inaccuracy",
+        metavar="<Breakpoint inaccuracy in bp>",
+        type=int,
+        required=False,
+        default = 0)
 
     parser.add_argument(
         "-o", 
@@ -88,6 +97,15 @@ def main(args):
         type=str,
         nargs=1,
         required=True)
+    
+    parser.add_argument(
+        "-d", 
+        "--likelihood_min_diff", 
+        metavar="<Min difference between two bigger likelihood>", 
+        type=int,
+        nargs=1,
+        required=False,
+        default=20)
 
     args = parser.parse_args()
 
@@ -96,6 +114,8 @@ def main(args):
     inputVCF = args.vcf[0]
     regionSize = args.regionSize
     outputVCF = args.output[0]
+    diff_treshold = args.likelihood_min_diff
+    bk_inaccuracy = args.inaccuracy
 
 
     # Load the dictionary 'chromDict' from pickle file.
@@ -113,6 +133,9 @@ def main(args):
 
     svsDict = {}
     gfaNode2svRegionsDict = {}
+
+    inacc = bk_inaccuracy / 2 #This uncertainty will be taken into account by both sides in the regions
+
     for chr, chrObject in chromDict.items() :
         for sv in chrObject.svs:
 
@@ -120,16 +143,16 @@ def main(args):
             # If the node is smaller than the set region size, then it is created using a deep graph traversal.
 
             ## adjLeft.
-            create_region(sv,  sv.gfaNodes[0], Orientation.REVERSE ,regionSize, "adjLeft", gfaNode2svRegionsDict, gfa_graph)              
+            create_region(sv,  sv.gfaNodes[0], Orientation.REVERSE ,regionSize, "adjLeft", gfaNode2svRegionsDict, gfa_graph, inacc)              
 
             ## adjRight.
-            create_region(sv,  sv.gfaNodes[-1], Orientation.FORWARD ,regionSize, "adjRight", gfaNode2svRegionsDict, gfa_graph)
+            create_region(sv,  sv.gfaNodes[-1], Orientation.FORWARD ,regionSize, "adjRight", gfaNode2svRegionsDict, gfa_graph, inacc)
             
             ## nodeSVbegin.
-            create_region(sv,  sv.gfaNodes[1], Orientation.FORWARD ,regionSize, "nodeSVbegin", gfaNode2svRegionsDict,gfa_graph)
+            create_region(sv,  sv.gfaNodes[1], Orientation.FORWARD ,regionSize, "nodeSVbegin", gfaNode2svRegionsDict,gfa_graph, inacc)
 
             ## nodeSVend.
-            create_region(sv,  sv.gfaNodes[-2], Orientation.REVERSE ,regionSize, "nodeSVend", gfaNode2svRegionsDict, gfa_graph)
+            create_region(sv,  sv.gfaNodes[-2], Orientation.REVERSE ,regionSize, "nodeSVend", gfaNode2svRegionsDict, gfa_graph, inacc)
 
             svsDict[sv.id] = sv
 
@@ -158,13 +181,16 @@ def main(args):
                 continue
 
             #2. Get the barcode ID.
-            #######################
+            ######################
             if "BX:Z:" in readID:
                 barcodeID = "BX:Z:" + ''.join(readID.split("BX:Z:")[1]).split(" ")[0]
                 readID = readID.split("BX:Z:")[0]
             else:
                 barcodeID = ""
 
+            #barcodeID = readID.split('_')[1]
+            #print(barcodeID)
+            
 
             #3. Get a set of SV regions where at least one vgNode of the path belongs to.
             #############################################################################
@@ -211,7 +237,6 @@ def main(args):
                             elif region_type == "nodeSVend" :
                                 sv.nodeSVend.addBarcode(barcodeID)
 
-                # TODO : take into account the information split-reads
 
     ###########################
     #C. Estimate the genotype.
@@ -227,7 +252,7 @@ def main(args):
                 outVCF.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
                 outVCF.write('##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Cumulated depth accross samples (sum)">\n')
                 outVCF.write('##FORMAT=<ID=AD,Number=3,Type=Integer,Description="Depth of each allele by sample (allele0, allele1, alleleNA)">\n')
-                outVCF.write('##FORMAT=<ID=AF,Number=1,Type=Float,Description="Alternative allelic frequency">\n')
+                outVCF.write('##FORMAT=<ID=AF,Number=1,Type=Float,Description="Alternative allelic frequency">\n') #TODO modifier cette ligne selon likelihood
                 #outVCF.write(line.rstrip("\n") + "\t" + "\t".join(["FORMAT", "SAMPLE"]) + "\n")
                 outVCF.write("#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE\n")
 
@@ -243,19 +268,19 @@ def main(args):
 
                     # Clean the set of barcodes to keep only the informative ones.
                     adjLeft_barcodesDict, adjRight_barcodesDict, nodeSVbegin_barcodesDict, nodeSVend_barcodesDict = cleanBarcodes(sv)
+                    #print(adjLeft_barcodesDict, adjRight_barcodesDict, nodeSVbegin_barcodesDict, nodeSVend_barcodesDict)
                     
                     # Estimate the genotype: on #alns with only alns of barcodes specific to one allele.
                     nbBarc_support_alleles, nbAlns_support_alleles = getSupportBarcodes(adjLeft_barcodesDict, adjRight_barcodesDict, nodeSVbegin_barcodesDict, nodeSVend_barcodesDict)
-                    #result_GT, allelic_frequency_allele1 = genotype(nbAlns_support_alleles)
-
+                    
                     #Error probability for likelihood (according to inversion length)
                     high, medium, low = 100000, 50000, 25000
-                    if int(sv.length) > high : error_proba = 0.1
-                    elif int(sv.length) < high and int(sv.length) > medium  : error_proba = 0.1
-                    elif int(sv.length) < medium and int(sv.length) > low  : error_proba = 0.1
-                    elif int(sv.length) < low  : error_proba = 0.1
+                    if int(sv.length) >= high : error_proba = 0.008 #0.008
+                    elif int(sv.length) < high and int(sv.length) >= medium  : error_proba = 0.02 # 0.02
+                    elif int(sv.length) < medium and int(sv.length) >= low  : error_proba = 0.1 #0.1
+                    elif int(sv.length) < low  : error_proba = 0.2 #0.2
 
-                    result_GT, likelihoods = genotype(nbAlns_support_alleles, error_proba)
+                    result_GT, likelihoods = genotype(nbAlns_support_alleles, error_proba, diff_treshold)
                                     
                     # Get statistics.
                     nbBarc_total, nbAlns_total, nbBarc_adjLeft, nbBarc_adjRight, nbBarc_nodeSVbegin, nbBarc_nodeSVend, nbAlns_adjLeft, nbAlns_adjRight, nbAlns_nodeSVbegin, nbAlns_nodeSVend = get_statistics(nbBarc_support_alleles, nbAlns_support_alleles, adjLeft_barcodesDict, adjRight_barcodesDict, nodeSVbegin_barcodesDict, nodeSVend_barcodesDict)
@@ -270,7 +295,7 @@ def main(args):
                         new_line = (
                             line.rstrip("\n")
                             + "\t"
-                            + "GT:DP:AD:AF"
+                            + "GT:DP:AD:AF" #TODO modifier cette ligne selon likelihood
                             + "\t"
                             + result_GT
                             + ":"
@@ -282,8 +307,7 @@ def main(args):
                             + ","
                             + str(round(likelihoods[1],3) if likelihoods[1] is not None else 'NA')
                             + ","
-                            + str(round(likelihoods[2],3) if likelihoods[2] is not None else 'NA')
-                            #+ str(allelic_frequency_allele1)
+                            + str(round(likelihoods[2],3) if likelihoods[2] is not None else 'NA')                            
                         )
                         outVCF.write(new_line + "\n")
                     else:
@@ -291,7 +315,7 @@ def main(args):
                         new_line = (
                             "\t".join(line_without_genotype)
                             + "\t"
-                            + "GT:DP:AD:AF"
+                            + "GT:DP:AD:AF" #TODO modifier cette ligne selon likelihood
                             + "\t"
                             + result_GT
                             + ":"
@@ -304,7 +328,6 @@ def main(args):
                             + str(round(likelihoods[1],3) if likelihoods[1] is not None else 'NA')
                             + ","
                             + str(round(likelihoods[2],3) if likelihoods[2] is not None else 'NA')
-                            #+ str(allelic_frequency_allele1)
                         )
                         outVCF.write(new_line + "\n")
 
@@ -316,27 +339,89 @@ def main(args):
 # Functions.
 #############
 
-def create_region(sv, node, orientation, region_size, region_type, gfaNode2svRegionsDict, gfa_graph):
-    ''' Function to create regions based on node size and set region size '''
+# def create_region(sv, node, orientation, region_size, region_type, gfaNode2svRegionsDict, gfa_graph):
+#     ''' Function to create regions based on node size and set region size '''
+#     end_region = int(region_size +inacc )
+#     # If the node is smaller than the set region size, then create the region using a deep graph traversal
+#     if length_node(node) < region_size : #TODO:remove
+#         if region_type == 'nodeSVbegin' or region_type == 'nodeSVend' :
+#             if region_size > int(sv.length / 2): #TODO:remove
+#                 regionSize_nodeSV = int(sv.length / 2) #TODO: remove
+#                 dico_dfs_region = createRegion_DFS(node,orientation,regionSize_nodeSV,gfa_graph)
+#             else :
+#                 dico_dfs_region = createRegion_DFS(node,orientation,region_size, gfa_graph)
+#         else :
+#             dico_dfs_region = createRegion_DFS(node,orientation,region_size, gfa_graph)
+        
+#         dico_dfs_region = clean_region(dico_dfs_region)
+#         format_region(sv,dico_dfs_region,region_type,gfaNode2svRegionsDict)
 
-    # If the node is smaller than the set region size, then create the region using a deep graph traversal
-    if length_node(node) < region_size :
+#     # Otherwise create a region on the node
+#     else :
+#         associate_GFANode_To_SVRegion(sv, node,region_type, region_size, gfaNode2svRegionsDict)
+
+
+def create_region(sv, node, orientation, region_size, region_type, gfaNode2svRegionsDict, gfa_graph, region_start):
+    region_end = int(region_size + region_start)
+
+#   If the node is smaller than the set region size, then create the region using a deep graph traversal
+    if length_node(node) < region_end :
         if region_type == 'nodeSVbegin' or region_type == 'nodeSVend' :
-            if region_size > int(sv.length / 2):
-                regionSize_nodeSV = int(sv.length / 2)
-                dico_dfs_region = createRegion_DFS(node,orientation,regionSize_nodeSV,gfa_graph)
+            if region_end > int(sv.length / 2):
+                region_end_SV = int(sv.length / 2)
+                dico_dfs_region = createSubRegion(node,orientation, gfa_graph, region_start, region_end_SV)
             else :
-                dico_dfs_region = createRegion_DFS(node,orientation,region_size, gfa_graph)
+                dico_dfs_region = createSubRegion(node,orientation, gfa_graph, region_start, region_end)
         else :
-            dico_dfs_region = createRegion_DFS(node,orientation,region_size, gfa_graph)
+            dico_dfs_region = createSubRegion(node,orientation, gfa_graph, region_start, region_end)
         
         dico_dfs_region = clean_region(dico_dfs_region)
         format_region(sv,dico_dfs_region,region_type,gfaNode2svRegionsDict)
 
-    # Otherwise create a region on the node
+#   Otherwise create a region on the node
     else :
-        associate_GFANode_To_SVRegion(sv, node,region_type, region_size, gfaNode2svRegionsDict)
+        associate_GFANode_To_SVRegion(sv, node,region_type, region_size, gfaNode2svRegionsDict, region_start)
 
+
+def createSubRegion(node, orientation, gfa_graph, start, end):
+
+    full_zone = createRegion_DFS(node, orientation, end, gfa_graph) # We recove all the nodes under the end region for all the path
+    full_zone = clean_region(full_zone) # Ensure no part of a node is counted twice
+    if start == 0: # If no shift is needed, return the created region directly
+        return full_zone
+    forbidden_zone = createRegion_DFS(node, orientation, start, gfa_graph) # We recove all the nodes under the start region for all the path
+    forbidden_zone = clean_region(forbidden_zone) # Ensure no part of a node is counted twice
+
+
+    final_region = defaultdict(list) # Initialize the dictionary that will contain the final region (full - forbidden)
+
+    for node_id, node_segments in full_zone.items(): # for each nodes that constitute full region
+        if node_id not in forbidden_zone:   # if this node not in forbiden region, we add it
+            final_region[node_id].extend(node_segments)
+        else:                         # if this node is in, how is it (full ?)
+            node_len = length_node(node_id)
+            max_f = 0                 # initialization of the prohibition borders
+            min_r = node_len
+            
+            for segment_type_f, segment_coord_f in forbidden_zone[node_id]: #we recover the forbiden part of this node and forbidden_zone[node_id] = node_segment_f(orbidden)
+                if segment_type_f == "Full": #f for forbidden, if not f, it's full_zone
+                    max_f = node_len # Force total exclusion because we enter the "maxf >= maxr" if statement right after
+                    break            # Exit the for loop with the entire node being forbidden
+                if segment_type_f == "CutF": 
+                    max_f = max(max_f, segment_coord_f[1]) # Border update: get the largest part of the forbidden cutF
+                if segment_type_f == "CutR": 
+                    min_r = min(min_r, segment_coord_f[0]) # Border update: get the largest part of the forbidden cutR
+
+            if max_f >= min_r: # Security but normaly never coming because we clean the region of both dict so if it's the case, the node is full, not with cutR and cufF
+                continue       # If this is the case, the entire node is forbidden, so we move to the next node without adding this one
+
+            for segment_type, segment_coord in node_segments: # For all node_segments of this node (the node present in both the forbidden and full zones)
+                start_segment, end_segment = segment_coord    # Get the coordinates of this node
+                new_start = max(start_segment, max_f)         # Clean the segment to exclude any parts overlapping with the forbidden zone
+                new_end = min(end_segment, min_r)             # Same but for the other side 
+                if new_end > new_start:                       # Checks that a portion of the sequence remains valid after applying the exclusion bounds (max_f and min_r).
+                    final_region[node_id].append(("cut", [new_start, new_end])) # Add the modified segment of this node to the final region
+    return final_region
 
 def createRegion_DFS(node, orientation, region_size, gfa_graph):
     ''' Function that allows a graph to be traversed in depth to create a region based on a fixed size. '''
@@ -382,6 +467,7 @@ def createRegion_DFS(node, orientation, region_size, gfa_graph):
         else : #dist_path = region_size
             region[node] = []
             region[node].append(('Full',[0,region_size-dist]))
+
     return region
 
 
@@ -400,7 +486,7 @@ def clean_region(region):
             #print(region, "\n")
             size_forward = 0
             size_reverse = 0
-            for i in range(2):
+            for i in range(len(region[node])):
                 if region[node][i][0] == "CutF" :
                     if size_forward < region[node][i][1][1] - region[node][i][1][0] :
                         size_forward = region[node][i][1][1] - region[node][i][1][0]
@@ -414,7 +500,7 @@ def clean_region(region):
             if size_reverse == 0 :
                 region[node]=[('CutF',[0,size_forward])]
             elif size_forward == 0 :
-                region[node]=[('CutR',[0,size_reverse])]
+                region[node]=[('CutR',[size_reverse,length_node(node)])]
     return region
 
 def format_region(sv,region_dico, region_type,gfaNode2svRegionsDict):
@@ -451,46 +537,90 @@ def format_region(sv,region_dico, region_type,gfaNode2svRegionsDict):
             gfaNode2svRegionsDict[node].append((sv, region_type,coords,node_lenght))
 
      
-def associate_GFANode_To_SVRegion(sv_object, gfaNode, region_type, regionSize, gfaNode2svRegionsDict):
-    """Method to associate a GFA node to a SV region."""
+# def associate_GFANode_To_SVRegion(sv_object, gfaNode, region_type, regionSize, gfaNode2svRegionsDict,inacc):
+#     """Method to associate a GFA node to a SV region."""
     
-    node_start = int(str(gfaNode).split(":")[1]) - 1             #positions in 'gfaNode_id' are 1-based and incl.
-    node_end = int(str(gfaNode).split(":")[2])  
-    node_length = (node_end-node_start)     #'node_start' and 'node_end' are 0-based and incl./excl. resp.
+#     node_start = int(str(gfaNode).split(":")[1]) - 1             #positions in 'gfaNode_id' are 1-based and incl.
+#     node_end = int(str(gfaNode).split(":")[2])  
+#     node_length = (node_end-node_start)     #'node_start' and 'node_end' are 0-based and incl./excl. resp.
+
+#     # adjLeft.
+#     if region_type == "adjLeft":
+#         coords = [(node_length-regionSize), node_length]
+#         sv_object.adjLeft = sv_object.getAdjLeft(coords,gfaNode) 
+
+
+#     # adjRight.
+#     elif region_type == "adjRight":
+#         coords = [0, regionSize]
+#         sv_object.adjRight = sv_object.getAdjRight(coords,gfaNode)
+
+#     # nodeSVbegin.
+#     elif region_type == "nodeSVbegin":
+#         if regionSize > int(sv_object.length / 2):
+#             regionSize_nodeSV = int(sv_object.length / 2)
+#         else:
+#             regionSize_nodeSV = regionSize
+#         coords = [0, regionSize_nodeSV]
+#         sv_object.nodeSVbegin = sv_object.getNodeSVbegin(coords,gfaNode)
+
+#     # nodeSVend.
+#     elif region_type == "nodeSVend":
+#         if regionSize > int(sv_object.length / 2):
+#             regionSize_nodeSV = int(sv_object.length / 2)
+#         else:
+#             regionSize_nodeSV = regionSize
+#         coords = [(node_length-regionSize_nodeSV), node_length]
+#         sv_object.nodeSVend = sv_object.getNodeSVend(coords,gfaNode)
+
+#     if gfaNode not in gfaNode2svRegionsDict:
+#         gfaNode2svRegionsDict[gfaNode] = [(sv_object, region_type, coords,node_length)]
+#     else:
+#         gfaNode2svRegionsDict[gfaNode].append((sv_object, region_type, coords,node_length))
+
+def associate_GFANode_To_SVRegion(sv_object, gfaNode, region_type, regionSize, gfaNode2svRegionsDict,region_start):
+    """Method to associate a GFA node to a SV region."""  
+    node_length = length_node(gfaNode)     #'node_start' and 'node_end' are 0-based and incl./excl. resp.
     
     # adjLeft.
     if region_type == "adjLeft":
-        coords = [(node_length-regionSize), node_length]
+        coords = [(node_length-(regionSize+region_start)), node_length - region_start]
         sv_object.adjLeft = sv_object.getAdjLeft(coords,gfaNode) 
 
 
     # adjRight.
     elif region_type == "adjRight":
-        coords = [0, regionSize]
+        coords = [region_start, regionSize+region_start]
         sv_object.adjRight = sv_object.getAdjRight(coords,gfaNode)
+    
 
-    # nodeSVbegin.
+    # nodeSVbegin
     elif region_type == "nodeSVbegin":
-        if regionSize > int(sv_object.length / 2):
-            regionSize_nodeSV = int(sv_object.length / 2)
+        if (regionSize+region_start) > int(sv_object.length / 2):
+            regionSize_nodeSV = int(sv_object.length / 2) - region_start
         else:
             regionSize_nodeSV = regionSize
-        coords = [0, regionSize_nodeSV]
+
+        coords = [region_start, regionSize_nodeSV+region_start]
         sv_object.nodeSVbegin = sv_object.getNodeSVbegin(coords,gfaNode)
 
-    # nodeSVend.
+
+    # nodeSVend
     elif region_type == "nodeSVend":
-        if regionSize > int(sv_object.length / 2):
-            regionSize_nodeSV = int(sv_object.length / 2)
+        if (regionSize+region_start) > int(sv_object.length / 2):
+            regionSize_nodeSV = int(sv_object.length / 2) - region_start
         else:
             regionSize_nodeSV = regionSize
-        coords = [(node_length-regionSize_nodeSV), node_length]
+
+        coords = [(node_length-(regionSize_nodeSV+region_start)), node_length-region_start]
         sv_object.nodeSVend = sv_object.getNodeSVend(coords,gfaNode)
 
+    #gfaNode2svRegionsDict[gfaNode].append((sv_object, region_type, coords,node_length))
+
     if gfaNode not in gfaNode2svRegionsDict:
-        gfaNode2svRegionsDict[gfaNode] = [(sv_object, region_type, coords,node_length)]
+         gfaNode2svRegionsDict[gfaNode] = [(sv_object, region_type, coords,node_length)]
     else:
-        gfaNode2svRegionsDict[gfaNode].append((sv_object, region_type, coords,node_length))
+         gfaNode2svRegionsDict[gfaNode].append((sv_object, region_type, coords,node_length))
 
 def extract_nodes(path):       
     """Method to extract the nodes contained in a path from an alignment GAF file."""                                        
@@ -507,27 +637,7 @@ def extract_nodes(path):
     
     return list_way_node
 
-
-# def genotype(nbAlnBarc_support_alleles):
-#     """Method to return the genotype of the SV using the 'allelic_frequency'"""
-
-# 	# Allelic frequency.
-# 	####################
-#     if nbAlnBarc_support_alleles[0] == 0 and nbAlnBarc_support_alleles[1] == 0 :
-#         result_GT = './.'
-#         allelic_frequency_allele1 = "NA"    
-#     else :
-#         allelic_frequency_allele1 = nbAlnBarc_support_alleles[1] / (nbAlnBarc_support_alleles[0] + nbAlnBarc_support_alleles[1])
-#         if allelic_frequency_allele1 >= 0.8:	# allelic_frequency_allele1 close to 1 --> supports allele 1.
-#             result_GT = "1/1"
-#         elif allelic_frequency_allele1 <= 0.2:	# allelic_frequency_allele1 close to 0 --> supports allele 0.
-#             result_GT = "0/0"
-#         else:                                   # allelic_frequency_allele1 close to 0.5 --> supports both alleles (heterozygous).
-#             result_GT = "0/1"
-
-#     return result_GT, allelic_frequency_allele1
-
-def genotype(nbAlnBarc_support_alleles, e):
+def genotype(nbAlnBarc_support_alleles, e, diff_treshold):
     """Method to return the genotype of the SV using the genotype likelihood"""
     c1 = nbAlnBarc_support_alleles[0] #number of alignement supporting reference allele
     c2 = nbAlnBarc_support_alleles[1] #number of alignement supporting alternative allele
@@ -546,13 +656,28 @@ def genotype(nbAlnBarc_support_alleles, e):
             geno = encode_genotype(geno_not_encoded)
         else : geno = './.'
 
+        combination = Decimal(math.log10(math.comb(c1 + c2, c1)))
+        lik0 += combination 
+        lik1 += combination
+        lik2 += combination
+
+        #phred scaled score
+        prob0 = -10*lik0
+        prob1 = -10*lik1
+        prob2 = -10*lik2                                 
+                    
+        prob = [int(prob0), int(prob1), int(prob2)]
+
+        prob_sorted = sorted(prob, key=int)
+        diff = int(prob_sorted[1]) - int(prob_sorted[0])
+        if diff < diff_treshold :
+            geno = './.'
+
     else :
         geno = './.'
-        lik0, lik1, lik2 = [None, None, None]
+        prob = [None, None, None]
 
-    out = [-lik0, -lik1, -lik2] if any(x is not None for x in [lik0, lik1, lik2]) else [lik0, lik1, lik2]
-
-    return geno, out
+    return geno, prob
 
 
 def encode_genotype(g): 

@@ -105,6 +105,7 @@ def main(args) :
         for sq in bam_file.header["SQ"]:
             genome_size = genome_size + sq["LN"]
 
+    print("Genome_size:",genome_size)
 
     for read in bam_file.fetch():
         nb_read +=1
