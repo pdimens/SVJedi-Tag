@@ -1,4 +1,4 @@
-# Run SVJedi-GLR
+# Run SVJedi-Tag
 
 LR="testAuto/data/linked-reads.fastq"
 VCF="testAuto/data/inversions_file.vcf"
