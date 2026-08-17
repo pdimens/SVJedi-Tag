@@ -107,6 +107,14 @@ def main(args):
         type=int,
         required=False,
         default=20)
+    
+    parser.add_argument(
+        "-e",
+        "--likelihood_ProbError", 
+        metavar="Genotype likelihood probability error according to inversion size (Low (>25kb), Medium (25kb<=...<50kb), High (50kb<=...<100kb), Very high (>=100kb))", 
+        type=float,
+        nargs=4,
+        default=[0.2,0.1,0.02,0.008])
 
     args = parser.parse_args()
 
@@ -117,6 +125,7 @@ def main(args):
     outputVCF = args.output
     diff_treshold = args.likelihood_min_diff
     bk_inaccuracy = args.inaccuracy
+    list_PE = args.likelihood_ProbError
 
 
     # Load the dictionary 'chromDict' from pickle file.
@@ -279,10 +288,10 @@ def main(args):
                     
                     #Error probability for likelihood (according to inversion length)
                     high, medium, low = 100000, 50000, 25000
-                    if int(sv.length) >= high : error_proba = 0.008 #0.008
-                    elif int(sv.length) < high and int(sv.length) >= medium  : error_proba = 0.02 # 0.02
-                    elif int(sv.length) < medium and int(sv.length) >= low  : error_proba = 0.1 #0.1
-                    elif int(sv.length) < low  : error_proba = 0.2 #0.2
+                    if int(sv.length) >= high : error_proba = list_PE[3] #0.008
+                    elif int(sv.length) < high and int(sv.length) >= medium  : error_proba = list_PE[2] # 0.02
+                    elif int(sv.length) < medium and int(sv.length) >= low  : error_proba = list_PE[1] #0.1
+                    elif int(sv.length) < low  : error_proba = list_PE[0] #0.2
 
                     result_GT, likelihoods = genotype(nbAlns_support_alleles, error_proba, diff_treshold)
                                     

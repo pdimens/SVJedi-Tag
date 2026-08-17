@@ -10,7 +10,7 @@ mkdir -p testAuto/output_test
 rm -f testAuto/output_test/*
 
 date
-python svjedi-tag.py -v $VCF -r $REF -q $LR -p $OUTPUT -s 10000 -t 8
+python svjedi-tag.py -v $VCF -r $REF -q $LR -o $OUTPUT
 
 
 # Automatic test
@@ -30,4 +30,4 @@ else
 fi
 
 date
-echo "No installation issues."
+
