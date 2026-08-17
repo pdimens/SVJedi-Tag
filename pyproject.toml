@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "svjedi-tag"
+version = "0.1.0"
+
+[project.scripts]
+svjedi-tag = "svjedi_tag:main"
+lr-stats = "lr_stats:main"
+svjedi-tag-likelihood-calibration = "likelihood_calibration:main"
+
+[tool.setuptools]
+py-modules = [
+    "svjedi_tag",
+    "classes_creationGFA",
+    "construct_graph",
+    "predict_genotype",
+    "lr_stats",
+    "likelihood_calibration"  
+]
+
+[tool.setuptools.package-dir]
+"" = "src"

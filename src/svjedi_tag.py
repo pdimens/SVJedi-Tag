@@ -34,7 +34,7 @@ import subprocess
 #pylint: disable=line-too-long, disable=trailing-whitespace, disable=consider-using-f-string
 
 
-def main(args):
+def main():
 
     parser = argparse.ArgumentParser()
 
@@ -141,7 +141,7 @@ def main(args):
             #### Analyze barcode signal & Genotype.
             print("### Analyze barcode signal & Genotype ###")
             outVCF = outPrefix + "_genotype.vcf"
-            "python3 {}/predict_genotype.py -a {} -v {} -o {} -s {} -g {} -i {} -d {} -e {} {} {} {}".format(script_dir, outGAF, inVCF, outVCF,regionSize, outGFA, bk_inaccuracy,diff_treshold,list_PE[0],list_PE[1],list_PE[2],list_PE[3])
+            c6 ="python3 {}/predict_genotype.py -a {} -v {} -o {} -s {} -g {} -i {} -d {} -e {} {} {} {}".format(script_dir, outGAF, inVCF, outVCF,regionSize, outGFA, bk_inaccuracy,diff_treshold,list_PE[0],list_PE[1],list_PE[2],list_PE[3])
             subprocess.run(c6, shell=True, check=True)
         
     else:

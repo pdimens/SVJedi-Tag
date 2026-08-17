@@ -1,0 +1,4 @@
+[console_scripts]
+lr-stats = lr_stats:main
+svjedi-tag = svjedi_tag:main
+svjedi-tag-likelihood-calibration = likelihood_calibration:main
