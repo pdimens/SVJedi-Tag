@@ -1,4 +1,4 @@
-
+![Logo](logo.png)
 
 **SVJedi-Tag** is a structural variant genotyping tool designed to genotype inversions from linked-read sequencing data. It leverages the barcode signals specific to linked-read technology and combines them with a genotype likelihood model to estimate the genotype of a sample for a set of target inversions.
 
