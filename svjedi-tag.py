@@ -152,26 +152,106 @@ def main(args):
         c1 = "python3 {}/construct_graph.py -v {} -r {} -o {}".format(script_dir,inVCF, inREF, outGFA)
         subprocess.run(c1, shell=True, check=True)
 
+        # ### Index graph.
+        # print("### Index graph ###")
+        # c3 = "vg autoindex --workflow giraffe -g {} -p {}".format(outGFA, outPrefix)
+        # subprocess.run(c3, shell=True, check=True)
+
+        # ### Map linked-reads on graph.
+        # print ("### Map linked-reads on graph ###")
+        # outGBZ = outPrefix + ".giraffe.gbz"
+        # outMIN = outPrefix + ".min"
+        # outDIST = outPrefix + ".dist"
+        # outGAF = outPrefix + "_vgGiraffe.gaf"
+
+        # #if multifile == False :
+        # if len(inFQ) == 2 :
+        #     c4 = "vg giraffe -t {} -Z {} -m {} -d {} -f {} -f {} -o gaf --named-coordinates > {}".format(threads, outGBZ, outMIN, outDIST, inFQ[0],  inFQ[1], outGAF)
+        # elif len(inFQ) == 1 :
+        #     c4 = "vg giraffe -t {} -Z {} -m {} -d {} -f {} -i -o gaf --named-coordinates > {}".format(threads, outGBZ, outMIN, outDIST,inFQ[0], outGAF)
+        # else:
+        #     print("ERROR: Reads file required. One interleaved FASTQ or two paired-end FASTQ files.")
+        #     exit(1)
+        # subprocess.run(c4, shell=True, check=True)
+
         ### Index graph.
         print("### Index graph ###")
-        c3 = "vg autoindex --workflow giraffe -g {} -p {}".format(outGFA, outPrefix)
+
+        c3 = "vg autoindex --workflow sr-giraffe -g {} -p {}".format(
+            outGFA,
+            outPrefix
+        )
+
         subprocess.run(c3, shell=True, check=True)
 
+
         ### Map linked-reads on graph.
-        print ("### Map linked-reads on graph ###")
+        print("### Map linked-reads on graph ###")
+
         outGBZ = outPrefix + ".giraffe.gbz"
-        outMIN = outPrefix + ".min"
+        outMIN = outPrefix + ".shortread.withzip.min"
+        outZIP = outPrefix + ".shortread.zipcodes"
         outDIST = outPrefix + ".dist"
         outGAF = outPrefix + "_vgGiraffe.gaf"
 
-        #if multifile == False :
-        if len(inFQ) == 2 :
-            c4 = "vg giraffe -t {} -Z {} -m {} -d {} -f {} -f {} -o gaf --named-coordinates > {}".format(threads, outGBZ, outMIN, outDIST, inFQ[0],  inFQ[1], outGAF)
-        elif len(inFQ) == 1 :
-            c4 = "vg giraffe -t {} -Z {} -m {} -d {} -f {} -i -o gaf --named-coordinates > {}".format(threads, outGBZ, outMIN, outDIST,inFQ[0], outGAF)
+
+        if len(inFQ) == 2:
+
+            c4 = (
+                "vg giraffe "
+                "-t {} "
+                "-Z {} "
+                "-m {} "
+                "-z {} "
+                "-d {} "
+                "-f {} "
+                "-f {} "
+                "-o gaf "
+                "--named-coordinates "
+                "> {}"
+            ).format(
+                threads,
+                outGBZ,
+                outMIN,
+                outZIP,
+                outDIST,
+                inFQ[0],
+                inFQ[1],
+                outGAF
+            )
+
+        elif len(inFQ) == 1:
+
+            c4 = (
+                "vg giraffe "
+                "-t {} "
+                "-Z {} "
+                "-m {} "
+                "-z {} "
+                "-d {} "
+                "-f {} "
+                "-i "
+                "-o gaf "
+                "--named-coordinates "
+                "--comments-as-tags " # to keep tag
+                "> {}"
+            ).format(
+                threads,
+                outGBZ,
+                outMIN,
+                outZIP,
+                outDIST,
+                inFQ[0],
+                outGAF
+            )
+
         else:
-            print("ERROR: Reads file required. One interleaved FASTQ or two paired-end FASTQ files.")
+            print(
+                "ERROR: Reads file required. "
+                "One interleaved FASTQ or two paired-end FASTQ files."
+            )
             exit(1)
+
         subprocess.run(c4, shell=True, check=True)
 
         #### Analyze barcode signal & Genotype.

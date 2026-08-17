@@ -34,10 +34,15 @@ import math
 import statistics                   #analysis
 from decimal import Decimal
 
-from pgGraphs.graph import Graph
+
 from collections import deque
 from collections import defaultdict
-from pgGraphs.abstractions import Orientation
+
+
+#from pgGraphs.graph import Graph
+from gfagraphs.graph import Graph
+#from pgGraphs.abstractions import Orientation
+from gfagraphs.abstractions import Orientation
 
 #pylint: disable=line-too-long, disable=trailing-whitespace, disable=too-many-function-args
 
@@ -162,8 +167,11 @@ def main(args):
     #########################
     with open(inputGAF, "r", encoding='UTF-8') as gafFile:
         for line in gafFile:
+
+            if line.startswith('@'):
+                continue
             
-            readID, readLen, __, __, __, path, __, pos_start, pos_end, __, alnLen, mapq, *__ = line.split("\t")
+            readID, readLen, __, __, __, path, __, pos_start, pos_end, __, alnLen, mapq,__, barcodeID, *__ = line.split("\t")
             #readID, __, __, readLen, __, __, __, path, __, pos_start, pos_end, __, alnLen, mapq, *__ = line.split("\t")
             
             #1. Filters to keep only the valid alignments.
@@ -178,11 +186,11 @@ def main(args):
 
             #2. Get the barcode ID.
             ######################
-            if "BX:Z:" in readID:
-                barcodeID = "BX:Z:" + ''.join(readID.split("BX:Z:")[1]).split(" ")[0]
-                readID = readID.split("BX:Z:")[0]
-            else:
-                barcodeID = ""
+            # if "BX:Z:" in readID:
+            #     barcodeID = "BX:Z:" + ''.join(readID.split("BX:Z:")[1]).split(" ")[0]
+            #     readID = readID.split("BX:Z:")[0]
+            # else:
+            #     barcodeID = ""
 
             #barcodeID = readID.split('_')[1]
             #print(barcodeID)
