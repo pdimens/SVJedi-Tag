@@ -111,7 +111,7 @@ def main(args):
     parser.add_argument(
         "-e",
         "--likelihood_ProbError", 
-        metavar="Genotype likelihood probability error according to inversion size (Low (>25kb), Medium (25kb<=...<50kb), High (50kb<=...<100kb), Very high (>=100kb))", 
+        metavar="Genotype likelihood probability error according to inversion size (Low (<25kb), Medium (25kb<=...<50kb), High (50kb<=...<100kb), Very high (>=100kb))", 
         type=float,
         nargs=4,
         default=[0.2,0.1,0.02,0.008])
@@ -265,7 +265,7 @@ def main(args):
                 outVCF.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
                 outVCF.write('##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Cumulated depth accross samples (sum)">\n')
                 outVCF.write('##FORMAT=<ID=AD,Number=3,Type=Integer,Description="Depth of each allele by sample (allele0, allele1, alleleNA)">\n')
-                outVCF.write('##FORMAT=<ID=AF,Number=1,Type=Float,Description="Alternative allelic frequency">\n') #TODO modifier cette ligne selon likelihood
+                outVCF.write('##FORMAT=<ID=PL,Number=3,Type=Integer,Description="Phred-scaled likelihood for each genotype">\n') 
                 #outVCF.write(line.rstrip("\n") + "\t" + "\t".join(["FORMAT", "SAMPLE"]) + "\n")
                 outVCF.write("#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE\n")
 
@@ -308,7 +308,7 @@ def main(args):
                         new_line = (
                             line.rstrip("\n")
                             + "\t"
-                            + "GT:DP:AD:AF" #TODO modifier cette ligne selon likelihood
+                            + "GT:DP:AD:PL" #TODO modifier cette ligne selon likelihood
                             + "\t"
                             + result_GT
                             + ":"
@@ -328,7 +328,7 @@ def main(args):
                         new_line = (
                             "\t".join(line_without_genotype)
                             + "\t"
-                            + "GT:DP:AD:AF" #TODO modifier cette ligne selon likelihood
+                            + "GT:DP:AD:PL" #TODO modifier cette ligne selon likelihood
                             + "\t"
                             + result_GT
                             + ":"

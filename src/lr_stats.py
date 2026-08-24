@@ -208,7 +208,6 @@ def main() :
         barcode_obj = dico_Barcode[barcode.split('-@-')[1]]
         barcode_obj.count_not_count_reads(nb_read_not_count) #number of reads on molecule with less than 3 reads
 
-    print(len(barcodes))
 
 
     #####################################################################################################
@@ -227,7 +226,6 @@ def main() :
     for bc, obj in dico_Barcode.items() :
 
         if obj.count_reads() == 0 :
-            print('oooo')
             continue
         
         list_nb_read_bc.append(obj.count_reads())

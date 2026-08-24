@@ -8,8 +8,8 @@ version = "0.1.0"
 
 [project.scripts]
 svjedi-tag = "svjedi_tag:main"
-lr-stats = "lr_stats:main"
-svjedi-tag-likelihood-calibration = "likelihood_calibration:main"
+LR_STATS = "lr_stats:main"
+svjedi-tag_likelihood-calibration = "likelihood_calibration:main"
 
 [tool.setuptools]
 py-modules = [

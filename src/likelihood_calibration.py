@@ -16,13 +16,13 @@ def main() :
     """ Main method """
     parser = argparse.ArgumentParser()
 
-    parser.add_argument( "-g", "--gaf", metavar="<input gaf file>", type=str, required=True)
-    parser.add_argument( "-gfa", "--gfa", metavar="<input gfa file>", type=str, required=True)
-    parser.add_argument( "-w", "--windowsSize", metavar="window size (size between breakpoint)", type=int, required=True)
-    parser.add_argument( "-n", "--number_of_rep", metavar="number of interest region/error rate", type=int, required=True)
-    parser.add_argument( "-ri", "--regionssizesIn", metavar="regions sizes for region in window", type=int, required=False, default=10000)
-    parser.add_argument( "-ro", "--regionssizesOut", metavar="regions sizes for region out window", type=int, required=False, default = 10000)
-    parser.add_argument( "-p", "--plot", metavar="path/plot.png", type=str, required=False, default = "Histogramme_error")
+    parser.add_argument( "--gaf", metavar="<alignment file>", help="", type=str, required=True)
+    parser.add_argument( "--gfa", metavar="<variation graph file>", help="", type=str, required=True)
+    parser.add_argument( "-w", metavar="<Windows size>", help="", type=int, required=True)
+    parser.add_argument( "-n", metavar="<Number of windows>", help="number of interest region/error rate", type=int, default=100)
+    parser.add_argument( "--regionssizesIn", help="regions sizes for region in window", type=int, default=10000)
+    parser.add_argument( "--regionssizesOut", help="regions sizes for region out window", type=int, default = 10000)
+    parser.add_argument( "-p", "--plot", metavar="path/plot.png", type=str, default = "Histogramme_error")
 
     args = parser.parse_args()
     inputGAF = args.gaf
@@ -109,7 +109,7 @@ def main() :
                 chr = node.split(':')[0]
                 if not chr.startswith('scaffold'):
                     all_nodes.append(node)
-    print(all_nodes)
+    #print(all_nodes)
     print("#Take node from GFA : Done")
     #'''
     # 2. Create windows and regions
@@ -149,8 +149,8 @@ def main() :
                 dico_windows[node].append({"bk" : (bk1,bk2), "regions":[cR1, cR2, cR3, cR4], "R1":{},"R2":{},"R3":{},"R4":{}})
     print("#Create windows and regions : Done")
 
-    print(f"CW\t{list_w_chr}")
-    print(f"NW\t{list_w_node}")
+    #print(f"CW\t{list_w_chr}")
+    #print(f"NW\t{list_w_node}")
     #'''
 
 
@@ -305,10 +305,10 @@ def main() :
                         list_errors_rates.append(error_rate)
                         nb_aln_count.append((sum(r1.values()), sum(r2.values()), sum(r3.values()), sum(r4.values())))                      
                     else :
-                        print("Error rate to lower")
+                        #print("Error rate to lower")
                         w = w - 1
                 else :
-                    print("Moins de 10 reads total")
+                    #print("Moins de 10 reads total")
                     filt_10bc +=1
                     w = w - 1
 
@@ -317,7 +317,7 @@ def main() :
                         list_errors_rates_bc.append(error_rate_bc)
                         nb_bc_count.append((len(r1), len(r2), len(r3), len(r4)))
             else :
-                print("Moins de deux reads par région")
+                #print("Moins de deux reads par région")
                 #print(len(r1),len(r2),len(r3),len(r4))
                 w = w -1 
 
