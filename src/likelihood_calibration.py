@@ -27,8 +27,8 @@ def main() :
     args = parser.parse_args()
     inputGAF = args.gaf
     inputGFA = args.gfa
-    windows_nb = args.number_of_rep
-    windows_Size = args.windowsSize  #Taille qui sépare les deux bk
+    windows_nb = args.n
+    windows_Size = args.w  #Taille qui sépare les deux bk
     size_ro = args.regionssizesIn
     size_ri = args.regionssizesOut
     plot = args.plot 
@@ -174,8 +174,13 @@ def main() :
     x = 0
     with open(inputGAF, "r",encoding='UTF-8') as file : 
         for line in file :
+
+            if line.startswith('@'):
+                continue
+
             n += 1
-            readID, readLen, __, __, __, path, __, pos_start, pos_end, __, alnLen, mapq, *__ = line.split("\t")
+            readID, readLen, __, __, __, path, __, pos_start, pos_end, __, alnLen, mapq, __, barcodeID, *__ = line.split("\t")
+            
 
             # #Filters to keep only the valid alignments.
             if path == "*":
@@ -186,15 +191,6 @@ def main() :
             # #     continue
             if int(mapq) < 20:
                 continue
-            
-            #Get the barcode ID.
-            if "BX:Z:" in readID:
-                
-                #barcodeID = "BX:Z:" + ''.join(readID.split("BX:Z:")[1]).split(" ")[0]
-                barcodeID = readID.split("BX:Z:")[1].split(" ")[0]
-                readID = readID.split("BX:Z:")[0]
-            else:
-                barcodeID = ""
 
             #barcodeID = readID.split('/')[1]
             if path.startswith(">") :
@@ -378,7 +374,7 @@ def main() :
 
         
         #print(f"F\t{list_diff}")
-        print(f"D\tMean Diff Likelihood: {mean_diff}")
+        #print(f"D\tMean Diff Likelihood: {mean_diff}")
 
 
         #6. Create plot
@@ -395,8 +391,8 @@ def main() :
         #print(f"BCM\tMean:{mean_error_bc}\tStd:{std_error_bc}\tMedian:{median_error_bc}")
 
 
-    print("#All : Done")
-    print("nb reads tot", n, "nb unmap", x)
+    #print("#All : Done")
+    #print("nb reads tot", n, "nb unmap", x)
 #Run function main
 if __name__ == "__main__":
     if sys.argv == 1:
