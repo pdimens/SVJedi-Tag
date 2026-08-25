@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "svjedi-tag"
-version = "0.1.0"
+version = "1.1.0"
 
 [project.scripts]
 svjedi-tag = "svjedi_tag:main"
