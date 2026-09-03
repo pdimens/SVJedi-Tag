@@ -127,7 +127,7 @@ def main(args):
     bk_inaccuracy = args.inaccuracy
     list_PE = args.likelihood_ProbError
 
-
+    
     # Load the dictionary 'chromDict' from pickle file.
     pickleFile = str(inputGAF).rsplit("_vgGiraffe.gaf", maxsplit=1)[0] + "_chromDict.pickle"
     with open(pickleFile, "rb") as pf:
@@ -147,7 +147,9 @@ def main(args):
     inacc = bk_inaccuracy / 2 #This uncertainty will be taken into account by both sides in the regions
 
     for chr, chrObject in chromDict.items() :
+        print(chr, chrObject.svs)
         for sv in chrObject.svs:
+            print("TEST")
 
             # Regions of interest are created from nodes directly adjacent to the inversion breakpoint.
             # If the node is smaller than the set region size, then it is created using a deep graph traversal.
@@ -164,12 +166,13 @@ def main(args):
             ## nodeSVend.
             create_region(sv,  sv.gfaNodes[-2], Orientation.REVERSE ,regionSize, "nodeSVend", gfaNode2svRegionsDict, gfa_graph, inacc)
 
+            print(sv.id, sv)
             svsDict[sv.id] = sv
 
     # Create a file containing the analysis results.
     analysis_file = str(inputGAF).rsplit("_vgGiraffe.gaf", maxsplit=1)[0] + "_analysis.txt"
-    analysisFile = open(analysis_file, "w", encoding='UTF-8')
-    analysisFile.write("\t".join(["SV", "Method", "Genotype", "Alt_Allelic_Freq", "NbBarc_tot", "NbAlns_tot", "NbBarc_allele0", "NbBarc_allele1", "NbBarc_alleleNA", "NbAlns_allele0", "NbAlns_allele1", "NbAlns_alleleNA", "NbBarc_adjLeft", "NbBarc_adjRight", "NbBarc_nodeSVbegin", "NbBarc_nodeSVend", "NbAlns_adjLeft", "NbAlns_adjRight", "NbAlns_nodeSVbegin", "NbAlns_nodeSVend", "MinOccAlns_adjLeft", "MinOccAlns_adjRight", "MinOccAlns_nodeSVbegin", "MinOccAlns_nodeSVend", "MaxOccAlns_adjLeft", "MaxOccAlns_adjRight", "MaxOccAlns_nodeSVbegin", "MaxOccAlns_nodeSVend", "MeanOccAlns_adjLeft", "MeanOccAlns_adjRight", "MeanOccAlns_nodeSVbegin", "MeanOccAlns_nodeSVend", "MedianOccAlns_adjLeft", "MedianOccAlns_adjRight", "MedianOccAlns_nodeSVbegin", "MedianOccAlns_nodeSVend"])+"\n")
+    #analysisFile = open(analysis_file, "w", encoding='UTF-8')
+    #analysisFile.write("\t".join(["SV", "Method", "Genotype", "Alt_Allelic_Freq", "NbBarc_tot", "NbAlns_tot", "NbBarc_allele0", "NbBarc_allele1", "NbBarc_alleleNA", "NbAlns_allele0", "NbAlns_allele1", "NbAlns_alleleNA", "NbBarc_adjLeft", "NbBarc_adjRight", "NbBarc_nodeSVbegin", "NbBarc_nodeSVend", "NbAlns_adjLeft", "NbAlns_adjRight", "NbAlns_nodeSVbegin", "NbAlns_nodeSVend", "MinOccAlns_adjLeft", "MinOccAlns_adjRight", "MinOccAlns_nodeSVbegin", "MinOccAlns_nodeSVend", "MaxOccAlns_adjLeft", "MaxOccAlns_adjRight", "MaxOccAlns_nodeSVbegin", "MaxOccAlns_nodeSVend", "MeanOccAlns_adjLeft", "MeanOccAlns_adjRight", "MeanOccAlns_nodeSVbegin", "MeanOccAlns_nodeSVend", "MedianOccAlns_adjLeft", "MedianOccAlns_adjRight", "MedianOccAlns_nodeSVbegin", "MedianOccAlns_nodeSVend"])+"\n")
 
     #########################
     #B. Process aln results.
@@ -300,7 +303,7 @@ def main(args):
 
                     # Write the analysis results to the 'analysisFile'.
                     #analysisFile.write("\t".join([str(sv.id), "3", str(result_GT), str(allelic_frequency_allele1), str(nbBarc_total), str(nbAlns_total), str(nbBarc_support_alleles[0]), str(nbBarc_support_alleles[1]), str(nbBarc_support_alleles[2]), str(nbAlns_support_alleles[0]), str(nbAlns_support_alleles[1]), str(nbAlns_support_alleles[2]), str(nbBarc_adjLeft), str(nbBarc_adjRight), str(nbBarc_nodeSVbegin), str(nbBarc_nodeSVend), str(nbAlns_adjLeft), str(nbAlns_adjRight), str(nbAlns_nodeSVbegin), str(nbAlns_nodeSVend)])+"\n")
-                    analysisFile.write("\t".join([str(sv.id), "3", str(result_GT), str("TODO"), str(nbBarc_total), str(nbAlns_total), str(nbBarc_support_alleles[0]), str(nbBarc_support_alleles[1]), str(nbBarc_support_alleles[2]), str(nbAlns_support_alleles[0]), str(nbAlns_support_alleles[1]), str(nbAlns_support_alleles[2]), str(nbBarc_adjLeft), str(nbBarc_adjRight), str(nbBarc_nodeSVbegin), str(nbBarc_nodeSVend), str(nbAlns_adjLeft), str(nbAlns_adjRight), str(nbAlns_nodeSVbegin), str(nbAlns_nodeSVend)])+"\n")
+                    #analysisFile.write("\t".join([str(sv.id), "3", str(result_GT), str("TODO"), str(nbBarc_total), str(nbAlns_total), str(nbBarc_support_alleles[0]), str(nbBarc_support_alleles[1]), str(nbBarc_support_alleles[2]), str(nbAlns_support_alleles[0]), str(nbAlns_support_alleles[1]), str(nbAlns_support_alleles[2]), str(nbBarc_adjLeft), str(nbBarc_adjRight), str(nbBarc_nodeSVbegin), str(nbBarc_nodeSVend), str(nbAlns_adjLeft), str(nbAlns_adjRight), str(nbAlns_nodeSVbegin), str(nbAlns_nodeSVend)])+"\n")
 
                     # Output the genotype in the output VCF file.
                     numbers = ",".join(str(y) for y in nbAlns_support_alleles)
@@ -344,7 +347,7 @@ def main(args):
                         )
                         outVCF.write(new_line + "\n")
 
-        analysisFile.close()
+        #analysisFile.close()
         print(f"Done. Output genotypes in file {outputVCF}")
 
 

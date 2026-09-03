@@ -268,4 +268,4 @@ if __name__ == "__main__":
         sys.exit("Error: missing arguments")
 
     else:
-        main(sys.argv[1:])
+        main()
