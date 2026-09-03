@@ -12,7 +12,11 @@ SVJedi-Tag first constructs a variation graph from the reference genome and a se
 
 You can install and use the SVJedi-Tag Conda package directly.
 ```
-conda install SVJedi-Tag
+conda install bioconda::svjedi-tag
+```
+You may also need to install GFAGraph.
+```
+pip install gfagraphs
 ```
 
 Alternatively, you can install the dependencies manually and clone the repository from GitHub.
@@ -74,7 +78,6 @@ Done. Output genotypes in file testAuto/output_test/tag_test_genotype.vcf
 Test-graph:PASS - No issues detected.
 Test-VCF:PASS - No issues detected.
 ```
-
 
 
 ---
