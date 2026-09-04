@@ -147,10 +147,8 @@ def main(args):
     inacc = bk_inaccuracy / 2 #This uncertainty will be taken into account by both sides in the regions
 
     for chr, chrObject in chromDict.items() :
-        print(chr, chrObject.svs)
         for sv in chrObject.svs:
-            print("TEST")
-
+            
             # Regions of interest are created from nodes directly adjacent to the inversion breakpoint.
             # If the node is smaller than the set region size, then it is created using a deep graph traversal.
 
@@ -166,7 +164,6 @@ def main(args):
             ## nodeSVend.
             create_region(sv,  sv.gfaNodes[-2], Orientation.REVERSE ,regionSize, "nodeSVend", gfaNode2svRegionsDict, gfa_graph, inacc)
 
-            print(sv.id, sv)
             svsDict[sv.id] = sv
 
     # Create a file containing the analysis results.
