@@ -26,12 +26,10 @@ Module 'predict_genotype.py': Process the barcodes signal to genotype the SVs.
 
 from __future__ import print_function
 import argparse
-import os
 import re
 import sys
 import pickle
 import math
-import statistics                   #analysis
 from decimal import Decimal
 
 

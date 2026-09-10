@@ -26,7 +26,6 @@ Module 'construct_graph_classes.py': Create the GFA graph file.
 
 from __future__ import print_function
 import argparse
-import os
 import sys
 import pickle
 from collections import OrderedDict

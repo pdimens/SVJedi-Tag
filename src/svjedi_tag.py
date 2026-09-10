@@ -27,7 +27,6 @@ Module 'svjedi-tag.py': Pipeline of SVJedi-Tag.
 import sys
 import argparse
 import os
-import re
 import subprocess
 
 

@@ -24,7 +24,6 @@
 import pysam
 import sys
 import argparse
-import subprocess
 import statistics
 #output
 from prettytable import PrettyTable
