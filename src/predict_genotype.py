@@ -24,7 +24,6 @@
 Module 'predict_genotype.py': Process the barcodes signal to genotype the SVs.
 """
 
-from __future__ import print_function
 import argparse
 import re
 import sys
