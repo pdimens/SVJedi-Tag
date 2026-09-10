@@ -24,9 +24,7 @@
 Module 'construct_graph_classes.py': Create the GFA graph file.
 """
 
-from __future__ import print_function
 #import argparse
-from . import createGraph
 import sys
 import pickle
 from collections import OrderedDict
@@ -40,13 +38,9 @@ from classes_creationGFA import Chrom, SV
 #################
 # Main function.
 #################
-
-def main(args):
-    """
-    Main method
-    """
-
-    createGraph.add_argument(
+def add_subparser(subparsers):
+    p = subparsers.add_parser("create-graph", help="...")
+    p.add_argument(
         "-v",
         "--vcf",
         metavar="<inputVCF>",
@@ -54,7 +48,7 @@ def main(args):
         nargs=1,
         required=True)
 
-    createGraph.add_argument(
+    p.add_argument(
         "-r",
         "--ref",
         metavar="<referenceGenome>",
@@ -62,13 +56,15 @@ def main(args):
         nargs=1,
         required=True)
 
-    createGraph.add_argument(
+    p.add_argument(
         "-o",
         "--output",
         metavar="<outputGFAFile>",
         type=str)
+    p.set_defaults(func=main)
 
-    args = createGraph.parse_args()
+def main(args):
+    """Main method"""
 
     inputVCF = args.vcf[0]
     reference_fasta = args.ref[0]
@@ -243,8 +239,6 @@ def main(args):
             for sv in chrObject.svs:
                 chrObject.writeAltLLines(LLines, sv, leftEdges, rightEdges, SLines, dict_ins_seq)
                 #TODO: for BND
-
-
 
      #4. Write the lines to the GFA graph file.
         ##########################################

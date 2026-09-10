@@ -64,22 +64,19 @@ class Barcode:
     
 #####################################################################################################
 
+def add_subparser(subparsers):
+    p = subparsers.add_parser("lr-stats", help="...")
+    p.add_argument( "-b", "--bam", metavar="<sort_bam_file>", help= "Bam file out of a mapping linked-reads/reference and with BX tag", type=str, required=True)
+    p.add_argument( "-s", "--molecule_max_size", metavar="<molecule_max_size>", help="Maximum size between two reads to share a same barcode and from the same molecule [default=100000]",type=int, required=False, default=100000)
+    p.add_argument( "-G", "--graph_output", metavar="<graphe_output_path/name_file>", help="Path/Name_file for the output graph.png [default=LR_Stats_graph.png]", type=str, required=False, default="LRStats_graph.png")
+    p.add_argument( "-o", "--output_table", metavar="<output_table_path/name_file>",help="Path/Name_file for the output table.csv [default=LR_Stats_table.csv] ", type=str, required=False, default="LRStats_table.csv")
+    p.add_argument( "-g", "--genome_size", metavar="<genome_size>", help="Genome size required to calculate depth", type=int, required=False, default=0)
+    p.add_argument( "-r", "--read_size", metavar="<read_size>", help="Read size required to calculate depth", type=int, required=False, default=150)
+    p.set_defaults(func=main)
 
-def main() :
-    """ Main method """
 
-    #####################################################################################################
-    #Arguments
-    #####################################################################################################
-    #parser = argparse.ArgumentParser()
-
-    lrStats.add_argument( "-b", "--bam", metavar="<sort_bam_file>", help= "Bam file out of a mapping linked-reads/reference and with BX tag", type=str, required=True)
-    lrStats.add_argument( "-s", "--molecule_max_size", metavar="<molecule_max_size>", help="Maximum size between two reads to share a same barcode and from the same molecule [default=100000]",type=int, required=False, default=100000)
-    lrStats.add_argument( "-G", "--graph_output", metavar="<graphe_output_path/name_file>", help="Path/Name_file for the output graph.png [default=LR_Stats_graph.png]", type=str, required=False, default="LRStats_graph.png")
-    lrStats.add_argument( "-o", "--output_table", metavar="<output_table_path/name_file>",help="Path/Name_file for the output table.csv [default=LR_Stats_table.csv] ", type=str, required=False, default="LRStats_table.csv")
-    lrStats.add_argument( "-g", "--genome_size", metavar="<genome_size>", help="Genome size required to calculate depth", type=int, required=False, default=0)
-    lrStats.add_argument( "-r", "--read_size", metavar="<read_size>", help="Read size required to calculate depth", type=int, required=False, default=150)
-
+def main(args):
+    "Main method"
 
     args = lrStats.parse_args()
     input = args.bam

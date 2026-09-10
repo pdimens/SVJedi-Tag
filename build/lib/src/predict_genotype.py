@@ -26,7 +26,6 @@ Process the barcodes signal to genotype the SVs.
 
 #import argparse
 import re
-import sys
 import pickle
 import math
 from decimal import Decimal
