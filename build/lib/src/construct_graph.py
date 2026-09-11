@@ -24,22 +24,19 @@
 Module 'construct_graph_classes.py': Create the GFA graph file.
 """
 
-#import argparse
 import sys
 import pickle
 from collections import OrderedDict
 from Bio import SeqIO
-from classes_creationGFA import Chrom, SV
+from . import Chrom, SV
 
 
 #pylint: disable=line-too-long, disable=trailing-whitespace, disable=too-many-function-args
 
 
-#################
-# Main function.
-#################
 def add_subparser(subparsers):
-    p = subparsers.add_parser("create-graph", help="...")
+    p = subparsers.add_parser("construct-graph", help="Create the GFA graph file")
+
     p.add_argument(
         "-v",
         "--vcf",
@@ -61,10 +58,14 @@ def add_subparser(subparsers):
         "--output",
         metavar="<outputGFAFile>",
         type=str)
-    p.set_defaults(func=main)
+    p.set_defaults(func=main, _parser = p)
+
 
 def main(args):
-    """Main method"""
+    '''Create the GFA graph file'''
+    if len(sys.argv) == 2:   # no args
+        args._parser.print_help()
+        sys.exit(1)
 
     inputVCF = args.vcf[0]
     reference_fasta = args.ref[0]
@@ -240,6 +241,8 @@ def main(args):
                 chrObject.writeAltLLines(LLines, sv, leftEdges, rightEdges, SLines, dict_ins_seq)
                 #TODO: for BND
 
+
+
      #4. Write the lines to the GFA graph file.
         ##########################################
         for line in headerLines:
@@ -328,11 +331,3 @@ def associate_GFANode_To_SVsBkptsAdj(list_of_SV_objects, node_start, node_end, g
         # b2.right
         if sv.coords[1] == node_start+1:
             sv.gfaNodes.append(gfaNode_id)
-
-##############################################
-if __name__ == "__main__":
-    if sys.argv == 1:
-        sys.exit("Error: missing arguments")
-
-    else:
-        main(sys.argv[1:])

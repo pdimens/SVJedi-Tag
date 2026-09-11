@@ -20,17 +20,25 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #*****************************************************************************
 import argparse
-from . import run, predict_genotype
+import sys
+from . import run, predict_genotype, lr_stats, likelihood_calibration, construct_graph
 
 def build_parser():
     parser = argparse.ArgumentParser(prog="svjedi-tag")
     subparsers = parser.add_subparsers(required=True)
     run.add_subparser(subparsers)
+    construct_graph.add_subparser(subparsers)
+    likelihood_calibration.add_subparser(subparsers)
     predict_genotype.add_subparser(subparsers)
+    lr_stats.add_subparser(subparsers)
     return parser
 
 def main():
-    args = build_parser().parse_args()
+    parser = build_parser()
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
+    args = parser.parse_args()
     args.func(args)
 
 if __name__ == "__main__":

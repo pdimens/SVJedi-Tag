@@ -5,6 +5,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "svjedi-tag"
 version = "1.1.0"
+dependencies = [
+    'pysam',
+    'biopython',
+    'networkx',
+    'prettytable',
+    'wcwidth',
+    'pandas',
+    'seaborn',
+    'tharos-pytools',
+    'gfagraphs'
+]
 
 [project.scripts]
 svjedi-tag = "src.__main__:main"

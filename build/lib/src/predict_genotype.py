@@ -26,6 +26,7 @@ Process the barcodes signal to genotype the SVs.
 
 #import argparse
 import re
+import sys
 import pickle
 import math
 from decimal import Decimal
@@ -42,8 +43,7 @@ from gfagraphs.abstractions import Orientation
 #pylint: disable=line-too-long, disable=trailing-whitespace, disable=too-many-function-args
 
 def add_subparser(subparsers):
-    p = subparsers.add_parser("predict", help="...")
-    p.set_defaults(func=main)
+    p = subparsers.add_parser("predict", help="Process the barcodes signal to genotype the SVs")
     p.add_argument(
         "-a",
         "--gaf",
@@ -103,16 +103,17 @@ def add_subparser(subparsers):
         type=float,
         nargs=4,
         default=[0.2,0.1,0.02,0.008])
+    p.set_defaults(func=main, _parser=p)
+
 
 #################
 # Main function.
 #################
 
 def main(args):
-    "Main method"
-
-
-    args = p.parse_args()
+    if len(sys.argv) == 2:   # no args
+        args._parser.print_help()
+        sys.exit(1)
 
     inputGFA = args.gfa
     inputGAF = args.gaf
@@ -341,7 +342,7 @@ def main(args):
                         outVCF.write(new_line + "\n")
 
         #analysisFile.close()
-        print(f"Done. Output genotypes in file {outputVCF}")
+        print(f"Done. Output genotypes in file {outputVCF}", file = sys.stderr)
 
 
 #############

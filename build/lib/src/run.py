@@ -22,13 +22,15 @@
 
 "Module 'svjedi-tag.py': Pipeline of SVJedi-Tag"
 
+import argparse
 import os
 import subprocess
-
+import sys
+from . import construct_graph, predict_genotype
 #pylint: disable=line-too-long, disable=trailing-whitespace, disable=consider-using-f-string
 
 def add_subparser(subparsers):
-    p = subparsers.add_parser("run", help="...")
+    p = subparsers.add_parser("run", help="Run the full SVJedi-Tag pipeline")
     p.add_argument("--input", required=True)
     p.add_argument(
         "-v", 
@@ -105,10 +107,13 @@ def add_subparser(subparsers):
         type=float,
         nargs=4, 
         default=[0.2,0.1,0.02,0.008])
-    p.set_defaults(func=main)
+    p.set_defaults(func=main, _parser=p)
 
 
 def main(args):
+    if len(sys.argv) == 2:   # no args
+        args._parser.print_help()
+        sys.exit(1)
     inVCF = args.vcf
     inREF = args.reference
     inFQ = args.linked_reads
@@ -124,32 +129,39 @@ def main(args):
 
     if args.gaf or args.gfa :
         if not args.gaf : 
-            print('### Gaf file (alignement) necessary please use parameter --gaf ###')
+            print('### Gaf file (alignement) necessary please use parameter --gaf ###', file = sys.stderr)
             
         if not args.gfa : 
-            print('### Gfa file (graphe) necessary please use parameter --gfa ###')
+            print('### Gfa file (graphe) necessary please use parameter --gfa ###', file = sys.stderr)
             
         else:
-            print("### Mapping of linked-reads onto graph already done ###")
+            print("### Mapping of linked-reads onto graph already done ###", file = sys.stderr)
             outGAF = os.path.abspath(args.gaf)
             outGFA = os.path.abspath(args.gfa)
-            print("Alignment GAF file: " + str(outGAF))
+            print("Alignment GAF file: " + str(outGAF), file = sys.stderr)
 
             #### Analyze barcode signal & Genotype.
-            print("### Analyze barcode signal & Genotype ###")
+            print("### Analyze barcode signal & Genotype ###", file = sys.stderr)
             outVCF = outPrefix + "_genotype.vcf"
-            c6 ="python3 {}/predict_genotype.py -a {} -v {} -o {} -s {} -g {} -i {} -d {} -e {} {} {} {}".format(script_dir, outGAF, inVCF, outVCF,regionSize, outGFA, bk_inaccuracy,diff_treshold,list_PE[0],list_PE[1],list_PE[2],list_PE[3])
-            subprocess.run(c6, shell=True, check=True)
-        
+            #c6 ="python3 {}/predict_genotype.py -a {} -v {} -o {} -s {} -g {} -i {} -d {} -e {} {} {} {}".format(script_dir, outGAF, inVCF, outVCF,regionSize, outGFA, bk_inaccuracy,diff_treshold,list_PE[0],list_PE[1],list_PE[2],list_PE[3])
+            #subprocess.run(c6, shell=True, check=True)
+
+            predict_args = argparse.Namespace(
+                gaf=outGAF, vcf=inVCF, output=outVCF,regionSize=regionSize, gfa=outGFA, inaccuracy=bk_inaccuracy, likelihood_min_diff=diff_treshold,likelihood_ProbError= list_PE
+            )
+            predict_genotype.main(predict_args)
+
     else:
         #### Create variant graph.
-        print("### Create variant graph ###")
+        print("### Create variant graph ###", file = sys.stderr)
         outGFA = outPrefix + ".gfa"
-        c1 = "python3 {}/construct_graph.py -v {} -r {} -o {}".format(script_dir,inVCF, inREF, outGFA)
-        subprocess.run(c1, shell=True, check=True)
+        #c1 = "python3 {}/construct_graph.py -v {} -r {} -o {}".format(script_dir,inVCF, inREF, outGFA)
+        #subprocess.run(c1, shell=True, check=True)
+        construct_args = argparse.Namespace(vcf = inVCF, ref = inREF, output = outGFA)
+        construct_graph.main(construct_args)
 
         ### Index graph.
-        print("### Index graph ###")
+        print("### Index graph ###", file = sys.stderr)
 
         c3 = "vg autoindex --workflow sr-giraffe -g {} -p {}".format(
             outGFA,
@@ -160,7 +172,7 @@ def main(args):
 
 
         ### Map linked-reads on graph.
-        print("### Map linked-reads on graph ###")
+        print("### Map linked-reads on graph ###", file = sys.stderr)
 
         outGBZ = outPrefix + ".giraffe.gbz"
         outMIN = outPrefix + ".shortread.withzip.min"
@@ -223,15 +235,20 @@ def main(args):
         else:
             print(
                 "ERROR: Reads file required. "
-                "One interleaved FASTQ or two paired-end FASTQ files."
+                "One interleaved FASTQ or two paired-end FASTQ files.",
+                file = sys.stderr
             )
             exit(1)
 
         subprocess.run(c4, shell=True, check=True)
 
         #### Analyze barcode signal & Genotype.
-        print("### Analyze barcode signal & Genotype ###")
+        print("### Analyze barcode signal & Genotype ###", file = sys.stderr)
         outVCF = outPrefix + "_genotype.vcf"
-        c6 ="python3 {}/predict_genotype.py -a {} -v {} -o {} -s {} -g {} -i {} -d {} -e {} {} {} {}".format(script_dir, outGAF, inVCF, outVCF,regionSize, outGFA, bk_inaccuracy,diff_treshold,list_PE[0],list_PE[1],list_PE[2],list_PE[3])
-        subprocess.run(c6, shell=True, check=True)
+        #c6 ="python3 {}/predict_genotype.py -a {} -v {} -o {} -s {} -g {} -i {} -d {} -e {} {} {} {}".format(script_dir, outGAF, inVCF, outVCF,regionSize, outGFA, bk_inaccuracy,diff_treshold,list_PE[0],list_PE[1],list_PE[2],list_PE[3])
+        #subprocess.run(c6, shell=True, check=True)
+        predict_args = argparse.Namespace(
+            gaf=outGAF, vcf=inVCF, output=outVCF,regionSize=regionSize, gfa=outGFA, inaccuracy=bk_inaccuracy, likelihood_min_diff=diff_treshold,likelihood_ProbError= list_PE
+        )
+        predict_genotype.main(predict_args)
 
